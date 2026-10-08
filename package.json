@@ -1,0 +1,25 @@
+{
+  "name": "hireflow",
+  "version": "1.0.0",
+  "description": "HireFlow - Applicant Screening & Interview Management",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "seed": "cd backend && npm run seed",
+    "migrate": "cd backend && npm run migrate",
+    "test": "cd backend && npm run test"
+  },
+  "keywords": [
+    "ats",
+    "recruitment",
+    "applicant-screening",
+    "interview-management",
+    "react",
+    "express",
+    "sequelize"
+  ],
+  "author": "",
+  "license": "ISC"
+}
