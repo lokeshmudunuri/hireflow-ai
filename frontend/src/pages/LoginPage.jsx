@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Lock, 
   Mail, 
@@ -11,11 +11,12 @@ import {
   Eye, 
   EyeOff, 
   CheckCircle2, 
-  Cpu, 
-  Sparkles,
-  BarChart3
+  AlertCircle,
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -24,23 +25,49 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, quickLogin, user } = useAuth();
+
+  // Forgot password modal state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotFeedback, setForgotFeedback] = useState(null);
+
+  const { login, quickLogin, forgotPassword } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const toast = useToast();
+
+  const redirectAfterLogin = (user) => {
+    // If user was attempting to reach a specific protected route, redirect there
+    const destination = location.state?.from?.pathname;
+    if (destination && destination !== '/login' && destination !== '/signup') {
+      navigate(destination);
+      return;
+    }
+
+    if (user?.role === 'interviewer') {
+      navigate('/interviews');
+    } else {
+      navigate('/');
+    }
+  };
 
   const handleManualLogin = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!email.trim() || !password) {
+      setError('Please provide both corporate email and password.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const loggedUser = await login(email, password);
-      if (loggedUser?.role === 'interviewer') {
-        navigate('/interviews');
-      } else {
-        navigate('/');
-      }
+      const loggedUser = await login(email.trim().toLowerCase(), password);
+      toast.success(`Welcome back, ${loggedUser.name}!`);
+      redirectAfterLogin(loggedUser);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid email or password. Please verify credentials.';
-      setError(msg);
+      setError(err.message || 'Invalid email or password. Please verify credentials.');
     } finally {
       setLoading(false);
     }
@@ -51,15 +78,34 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const loggedUser = await quickLogin(role);
-      if (role === 'interviewer') {
-        navigate('/interviews');
-      } else {
-        navigate('/');
-      }
+      toast.info(`Logged in with verified ${role.toUpperCase()} profile.`);
+      redirectAfterLogin(loggedUser);
     } catch (err) {
       setError('Unable to authenticate workspace account. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+
+    setForgotLoading(true);
+    setForgotFeedback(null);
+    try {
+      const res = await forgotPassword(forgotEmail.trim().toLowerCase());
+      setForgotFeedback({
+        type: 'success',
+        message: res.message || 'Password recovery instructions have been recorded. For local development, contact your System Administrator.'
+      });
+    } catch (err) {
+      setForgotFeedback({
+        type: 'error',
+        message: err.message || 'Failed to request password reset.'
+      });
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -143,7 +189,7 @@ export default function LoginPage() {
             gap: '0.75rem'
           }}>
             {[
-              { label: 'Screening Verification', desc: 'Automated requirement validation against requisition criteria' },
+              { label: 'Screening Verification', desc: 'Prerequisite requirement validation against requisition criteria' },
               { label: 'Deterministic Scoring', desc: '100-pt explainable engine across skills, experience & projects' },
               { label: 'Collaborative Evaluations', desc: 'Standardized 5-competency interview scorecards & audit logs' }
             ].map((step, i) => (
@@ -160,7 +206,7 @@ export default function LoginPage() {
           {/* Platform Live Stats Strip */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
             <div style={{ background: 'var(--bg-surface)', padding: '0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'ui-monospace, monospace' }}>12+</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', fontFamily: 'ui-monospace, monospace' }}>14</div>
               <div style={{ fontSize: '0.6875rem', color: 'var(--text-subtle)' }}>Seeded Candidates</div>
             </div>
             <div style={{ background: 'var(--bg-surface)', padding: '0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
@@ -187,7 +233,8 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--bg-app)'
+        background: 'var(--bg-app)',
+        overflowY: 'auto'
       }}>
         <div style={{ width: '100%', maxWidth: '440px' }}>
           <div style={{ marginBottom: '1.75rem' }}>
@@ -212,6 +259,7 @@ export default function LoginPage() {
               alignItems: 'center',
               gap: '0.5rem'
             }}>
+              <AlertCircle size={15} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
@@ -228,6 +276,7 @@ export default function LoginPage() {
                   className="input-field"
                   style={{ paddingLeft: '2.4rem' }}
                   placeholder="recruiter@hireflow.dev"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -240,14 +289,26 @@ export default function LoginPage() {
                 <label style={{ fontSize: '0.78125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   Password
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.72rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                >
-                  {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                  <span>{showPassword ? 'Hide' : 'Show'}</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.72rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  >
+                    {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                    <span>{showPassword ? 'Hide' : 'Show'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setShowForgotModal(true);
+                    }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--primary-text)', fontSize: '0.72rem', cursor: 'pointer' }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={15} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-subtle)' }} />
@@ -256,6 +317,7 @@ export default function LoginPage() {
                   className="input-field"
                   style={{ paddingLeft: '2.4rem' }}
                   placeholder="Password123!"
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -273,7 +335,7 @@ export default function LoginPage() {
                 />
                 <span>Remember session</span>
               </label>
-              <span style={{ color: 'var(--text-subtle)' }}>Secure JWT Auth</span>
+              <span style={{ color: 'var(--text-subtle)' }}>Secure Bcrypt + JWT Auth</span>
             </div>
 
             <button
@@ -287,8 +349,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Polished Demo Access Section */}
-          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
+          {/* Create Account Link */}
+          <div style={{ marginTop: '1.25rem', textAlign: 'center', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+            Need an operational account?{' '}
+            <Link to="/signup" style={{ color: 'var(--primary-text)', fontWeight: 600, textDecoration: 'none' }}>
+              Create an account
+            </Link>
+          </div>
+
+          {/* Quick Workspace Role Access Section */}
+          <div style={{ marginTop: '1.75rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -398,6 +468,87 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Recovery Modal */}
+      {showForgotModal && (
+        <div className="modal-overlay">
+          <div className="modal-dialog" style={{ maxWidth: '440px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <HelpCircle size={18} color="var(--primary-text)" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>
+                  Account Password Recovery
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => {
+                  setShowForgotModal(false);
+                  setForgotFeedback(null);
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Enter your registered corporate email to submit a password reset request. For development security, instructions are logged to server operations.
+              </p>
+
+              {forgotFeedback && (
+                <div style={{
+                  padding: '0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '0.78125rem',
+                  background: forgotFeedback.type === 'success' ? 'var(--success-subtle)' : 'var(--danger-subtle)',
+                  color: forgotFeedback.type === 'success' ? 'var(--success-text)' : 'var(--danger-text)',
+                  border: `1px solid ${forgotFeedback.type === 'success' ? 'var(--success-border)' : 'var(--danger-border)'}`
+                }}>
+                  {forgotFeedback.message}
+                </div>
+              )}
+
+              <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>
+                    Corporate Email
+                  </label>
+                  <input
+                    type="email"
+                    className="input-field"
+                    required
+                    placeholder="name@hireflow.dev"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      setShowForgotModal(false);
+                      setForgotFeedback(null);
+                    }}
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    disabled={forgotLoading}
+                  >
+                    {forgotLoading ? 'Submitting...' : 'Request Password Reset'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

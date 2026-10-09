@@ -9,6 +9,10 @@
     "build": "cd frontend && npm run build",
     "seed": "cd backend && npm run seed",
     "migrate": "cd backend && npm run migrate",
+    "db:verify": "node database/verify_user.js",
+    "db:init": "node database/init.js",
+    "db:migrate": "node database/migrations/run_migrations.js",
+    "db:seed": "node database/seeds/run_seeds.js",
     "test": "cd backend && npm run test"
   },
   "keywords": [

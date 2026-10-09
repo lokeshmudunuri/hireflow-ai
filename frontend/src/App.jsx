@@ -11,6 +11,7 @@ import CandidatesPage from './pages/CandidatesPage';
 import InterviewsPage from './pages/InterviewsPage';
 import TeamPage from './pages/TeamPage';
 import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function ProtectedLayout() {
@@ -28,7 +29,8 @@ function ProtectedLayout() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Preserve intended destination path
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   // Interviewers land directly on /interviews
@@ -96,6 +98,14 @@ export default function App() {
         <Route
           path="/login"
           element={!loading && isAuthenticated ? <Navigate to={getHomeRedirect()} replace /> : <LoginPage />}
+        />
+        <Route
+          path="/signup"
+          element={!loading && isAuthenticated ? <Navigate to={getHomeRedirect()} replace /> : <SignUpPage />}
+        />
+        <Route
+          path="/register"
+          element={<Navigate to="/signup" replace />}
         />
         <Route path="/*" element={<ProtectedLayout />} />
       </Routes>

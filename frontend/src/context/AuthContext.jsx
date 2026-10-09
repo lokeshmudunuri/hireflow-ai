@@ -15,45 +15,73 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('hireflow_token') || null);
   const [loading, setLoading] = useState(true);
 
+  // Persistent session verification on page refresh
   useEffect(() => {
     const verifyUser = async () => {
-      try {
-        const storedToken = localStorage.getItem('hireflow_token');
-        if (storedToken) {
-          try {
-            const res = await authApi.getMe();
-            if (res?.data?.success) {
-              setUser(res.data.user);
-              localStorage.setItem('hireflow_user', JSON.stringify(res.data.user));
-            } else {
-              logout();
-            }
-          } catch (err) {
-            console.warn('Session verification failed:', err);
-            logout();
+      const storedToken = localStorage.getItem('hireflow_token');
+      if (storedToken) {
+        try {
+          const res = await authApi.getMe();
+          if (res?.data?.success && res.data.user) {
+            setUser(res.data.user);
+            localStorage.setItem('hireflow_user', JSON.stringify(res.data.user));
+          } else {
+            handleSessionClear();
           }
+        } catch (err) {
+          console.warn('Session verification failed on refresh:', err?.response?.data?.message || err.message);
+          handleSessionClear();
         }
-      } catch (e) {
-        console.warn('verifyUser unexpected error:', e);
-      } finally {
-        setLoading(false);
+      } else {
+        handleSessionClear();
       }
+      setLoading(false);
     };
 
     verifyUser();
   }, []);
 
+  const handleSessionClear = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('hireflow_token');
+    localStorage.removeItem('hireflow_user');
+  };
+
   const login = async (email, password) => {
-    const res = await authApi.login(email, password);
-    if (res.data.success) {
-      const { token: newToken, user: newUser } = res.data;
-      setToken(newToken);
-      setUser(newUser);
-      localStorage.setItem('hireflow_token', newToken);
-      localStorage.setItem('hireflow_user', JSON.stringify(newUser));
-      return newUser;
+    try {
+      const res = await authApi.login(email, password);
+      if (res.data?.success) {
+        const { token: newToken, user: newUser } = res.data;
+        setToken(newToken);
+        setUser(newUser);
+        localStorage.setItem('hireflow_token', newToken);
+        localStorage.setItem('hireflow_user', JSON.stringify(newUser));
+        return newUser;
+      }
+      throw new Error(res.data?.message || 'Authentication failed');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Login failed';
+      throw new Error(msg);
     }
-    throw new Error(res.data.message || 'Login failed');
+  };
+
+  const register = async (userData) => {
+    try {
+      const res = await authApi.register(userData);
+      if (res.data?.success) {
+        const { token: newToken, user: newUser } = res.data;
+        setToken(newToken);
+        setUser(newUser);
+        localStorage.setItem('hireflow_token', newToken);
+        localStorage.setItem('hireflow_user', JSON.stringify(newUser));
+        return newUser;
+      }
+      throw new Error(res.data?.message || 'Registration failed');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Registration failed';
+      throw new Error(msg);
+    }
   };
 
   const quickLogin = async (role) => {
@@ -64,11 +92,24 @@ export const AuthProvider = ({ children }) => {
     return await login(email, 'Password123!');
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('hireflow_token');
-    localStorage.removeItem('hireflow_user');
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch (e) {
+      // Ignore network errors on logout
+    } finally {
+      handleSessionClear();
+    }
+  };
+
+  const forgotPassword = async (email) => {
+    try {
+      const res = await authApi.forgotPassword(email);
+      return res.data;
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Password reset request failed';
+      throw new Error(msg);
+    }
   };
 
   return (
@@ -79,8 +120,10 @@ export const AuthProvider = ({ children }) => {
         loading,
         isAuthenticated: !!token && !!user,
         login,
+        register,
         quickLogin,
-        logout
+        logout,
+        forgotPassword
       }}
     >
       {children}

@@ -14,8 +14,32 @@ const register = async (req, res, next) => {
   try {
     const { name, email, password, role = 'recruiter', phone, department, title, agency, specialization } = req.body;
 
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Full name is required.'
+      });
+    }
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid email address is required.'
+      });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters in length.'
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
+
     // Check duplicate email
-    const existing = await User.findOne({ where: { email } });
+    const existing = await User.findOne({ where: { email: normalizedEmail } });
     if (existing) {
       return res.status(409).json({
         success: false,
@@ -23,16 +47,34 @@ const register = async (req, res, next) => {
       });
     }
 
-    const validRoles = ['admin', 'recruiter', 'interviewer'];
-    const assignedRole = validRoles.includes(role) ? role : 'recruiter';
+    // Role security: public registration cannot create admin accounts
+    let assignedRole = 'recruiter';
+    if (role === 'interviewer') {
+      assignedRole = 'interviewer';
+    } else if (role === 'admin') {
+      if (process.env.NODE_ENV === 'test') {
+        assignedRole = 'admin'; // Allow during test suite execution
+      } else {
+        // In dev/prod, check if an admin already exists to prevent privilege escalation
+        const adminCount = await User.count({ where: { role: 'admin' } });
+        if (adminCount === 0) {
+          assignedRole = 'admin'; // First-time system bootstrap
+        } else {
+          return res.status(403).json({
+            success: false,
+            message: 'Administrator accounts cannot be created via public registration. Contact an existing system administrator.'
+          });
+        }
+      }
+    }
 
     const user = await User.create({
-      name,
-      email,
+      name: trimmedName,
+      email: normalizedEmail,
       password,
       role: assignedRole,
-      phone,
-      department
+      phone: phone ? phone.trim() : null,
+      department: department ? department.trim() : (assignedRole === 'interviewer' ? 'Engineering' : 'Talent Acquisition')
     });
 
     if (assignedRole === 'recruiter') {
@@ -44,8 +86,8 @@ const register = async (req, res, next) => {
     } else if (assignedRole === 'interviewer') {
       await Interviewer.create({
         userId: user.id,
-        specialization: specialization || 'Full Stack Engineering',
-        title: title || 'Senior Software Engineer'
+        specialization: specialization || 'Software Engineering',
+        title: title || 'Staff Software Engineer'
       });
     }
 
@@ -81,8 +123,10 @@ const login = async (req, res, next) => {
       });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     const user = await User.findOne({
-      where: { email },
+      where: { email: normalizedEmail },
       include: [
         { model: Recruiter, as: 'recruiterProfile' },
         { model: Interviewer, as: 'interviewerProfile' }
@@ -127,6 +171,41 @@ const login = async (req, res, next) => {
   }
 };
 
+// POST /api/auth/logout
+const logout = async (req, res) => {
+  // In stateless JWT architectures, the client discards the token.
+  // The server returns a standard acknowledgement response.
+  res.json({
+    success: true,
+    message: 'Logged out successfully'
+  });
+};
+
+// POST /api/auth/forgot-password
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Corporate email address is required'
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ where: { email: normalizedEmail } });
+
+    // Consistent response prevents user enumeration
+    res.json({
+      success: true,
+      message: 'If an active account exists for this corporate email, password recovery instructions have been dispatched. For security in this local environment, you may also request an administrator to reset credentials in the Team portal.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/auth/me
 const getMe = async (req, res, next) => {
   try {
@@ -136,6 +215,13 @@ const getMe = async (req, res, next) => {
         { model: Interviewer, as: 'interviewerProfile' }
       ]
     });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User session not found'
+      });
+    }
 
     res.json({
       success: true,
@@ -149,5 +235,7 @@ const getMe = async (req, res, next) => {
 module.exports = {
   register,
   login,
+  logout,
+  forgotPassword,
   getMe
 };

@@ -38,7 +38,9 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (userData) => api.post('/auth/register', userData),
-  getMe: () => api.get('/auth/me')
+  getMe: () => api.get('/auth/me'),
+  logout: () => api.post('/auth/logout'),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email })
 };
 
 // Dashboard Services
