@@ -48,6 +48,11 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// Root redirect to frontend client
+app.get('/', (req, res) => {
+  res.redirect(process.env.CLIENT_URL || 'http://localhost:5173');
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({

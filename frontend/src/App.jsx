@@ -20,8 +20,9 @@ function ProtectedLayout() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app)', color: 'var(--text-muted)' }}>
-        Authenticating HireFlow Session...
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app)', color: '#fff', gap: '1rem' }}>
+        <div style={{ width: '40px', height: '40px', border: '3px solid rgba(99, 102, 241, 0.2)', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Authenticating HireFlow Session...</div>
       </div>
     );
   }
@@ -57,7 +58,7 @@ function ProtectedLayout() {
   const meta = getPageMeta();
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={{ display: 'flex', minHeight: '100vh', width: '100%', overflow: 'hidden' }}>
       <Sidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflowY: 'auto' }}>
         <TopBar

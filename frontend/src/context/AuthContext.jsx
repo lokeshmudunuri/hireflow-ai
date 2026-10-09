@@ -5,28 +5,39 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('hireflow_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('hireflow_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
   const [token, setToken] = useState(() => localStorage.getItem('hireflow_token') || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const verifyUser = async () => {
-      const storedToken = localStorage.getItem('hireflow_token');
-      if (storedToken) {
-        try {
-          const res = await authApi.getMe();
-          if (res.data.success) {
-            setUser(res.data.user);
-            localStorage.setItem('hireflow_user', JSON.stringify(res.data.user));
+      try {
+        const storedToken = localStorage.getItem('hireflow_token');
+        if (storedToken) {
+          try {
+            const res = await authApi.getMe();
+            if (res?.data?.success) {
+              setUser(res.data.user);
+              localStorage.setItem('hireflow_user', JSON.stringify(res.data.user));
+            } else {
+              logout();
+            }
+          } catch (err) {
+            console.warn('Session verification failed:', err);
+            logout();
           }
-        } catch (err) {
-          console.warn('Session verification failed:', err);
-          logout();
         }
+      } catch (e) {
+        console.warn('verifyUser unexpected error:', e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     verifyUser();

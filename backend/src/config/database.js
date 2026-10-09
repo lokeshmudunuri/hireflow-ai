@@ -1,9 +1,9 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const isTest = process.env.NODE_ENV === 'test';
-const dialect = isTest ? 'sqlite' : (process.env.DB_DIALECT || 'mysql');
+const dialect = isTest ? 'sqlite' : (process.env.DB_DIALECT || 'sqlite');
 
 let sequelize;
 
