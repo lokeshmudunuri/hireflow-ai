@@ -285,6 +285,20 @@ describe('4. Candidates & Applications Funnel', () => {
     expect(res.body.application.isValidated).toBe(true);
   });
 
+  test('Recruiter can add candidate notes (201)', async () => {
+    const res = await request(app)
+      .post(`/api/candidates/${testCandidate.id}/notes`)
+      .set('Authorization', `Bearer ${recruiterToken}`)
+      .send({
+        note: 'Candidate completed introductory screening discussion.',
+        applicationId: testApplication.id
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.note.note).toContain('introductory screening');
+  });
+
   test('Deterministic score calculation evaluates properly', async () => {
     const res = await request(app)
       .post(`/api/applications/${testApplication.id}/recalculate-score`)
@@ -356,6 +370,46 @@ describe('5. Interview Scheduling & Scorecard Evaluation', () => {
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.evaluation.overallScore).toBe(8.6);
+  });
+
+  test('Interviewer can submit evaluation with No Hire recommendation (201)', async () => {
+    // Update existing or create a second round
+    const res = await request(app)
+      .post('/api/evaluations')
+      .set('Authorization', `Bearer ${interviewerToken}`)
+      .send({
+        interviewId: testInterview.id,
+        technicalSkillsScore: 3,
+        problemSolvingScore: 4,
+        communicationScore: 5,
+        projectKnowledgeScore: 3,
+        roleFitScore: 4,
+        recommendation: 'No Hire',
+        comments: 'Core skills and fundamentals fell below required bar.'
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.evaluation.recommendation).toBe('No Hire');
+  });
+
+  test('Invalid recommendation is rejected with 400 validation error', async () => {
+    const res = await request(app)
+      .post('/api/evaluations')
+      .set('Authorization', `Bearer ${interviewerToken}`)
+      .send({
+        interviewId: testInterview.id,
+        technicalSkillsScore: 5,
+        problemSolvingScore: 5,
+        communicationScore: 5,
+        projectKnowledgeScore: 5,
+        roleFitScore: 5,
+        recommendation: 'InvalidRecommendationString',
+        comments: 'Testing validator.'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
   });
 
   test('Application state transitions to INTERVIEW_COMPLETED following evaluation', async () => {

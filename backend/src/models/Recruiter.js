@@ -24,6 +24,14 @@ const Recruiter = sequelize.define('Recruiter', {
   title: {
     type: DataTypes.STRING(100),
     defaultValue: 'Technical Recruiter'
+  },
+  department: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  assignedTeam: {
+    type: DataTypes.STRING(150),
+    allowNull: true
   }
 }, {
   tableName: 'recruiters'

@@ -3,7 +3,7 @@
 > A production-ready, full-stack recruitment operations and applicant tracking system (ATS) engineered with modern React 18, Vite, Node.js, Express, Sequelize ORM, and SQLite/MySQL.
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/tests-46%20passed-success.svg)]()
+[![Tests](https://img.shields.io/badge/tests-49%20passed-success.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-informational.svg)]()
 
@@ -422,7 +422,7 @@ The seed data provisions three pre-configured accounts for testing each role:
 
 ## 🔬 15. Automated QA & Test Verification
 
-HireFlow features a 46-test automated suite verifying security, RBAC enforcement, state machine logic, score calculation, and end-to-end flows.
+HireFlow features a 49-test automated suite verifying security, RBAC enforcement, state machine logic, score calculation, evaluation submissions, and end-to-end flows.
 
 ```bash
 cd backend
@@ -435,8 +435,8 @@ PASS tests/api.test.js
   1. Health & Core System (1 test)
   2. Authentication & Authorization Security (8 tests)
   3. Job Requisitions Management (4 tests)
-  4. Candidates & Applications Funnel (6 tests)
-  5. Interview Scheduling & Scorecard Evaluation (4 tests)
+  4. Candidates & Applications Funnel (7 tests)
+  5. Interview Scheduling & Scorecard Evaluation (6 tests)
   6. Scoring Engine & State Machine Unit Guarantees (2 tests)
   7. Operational Activity Notifications API (2 tests)
 
@@ -449,9 +449,8 @@ PASS tests/full_flow.test.js
     5. Dashboard Real Database Metrics (1 test)
 
 Test Suites: 2 passed, 2 total
-Tests:       46 passed, 46 total
+Tests:       49 passed, 49 total
 Snapshots:   0 total
-Time:        5.202 s
 Ran all test suites.
 ```
 

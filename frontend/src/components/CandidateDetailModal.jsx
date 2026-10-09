@@ -43,6 +43,10 @@ export default function CandidateDetailModal({
   const [recalculating, setRecalculating] = useState(false);
   const [selectedTargetStatus, setSelectedTargetStatus] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showDecisionModal, setShowDecisionModal] = useState(false);
+  const [decisionChoice, setDecisionChoice] = useState('SELECTED');
+  const [decisionReason, setDecisionReason] = useState('');
+  const [submittingDecision, setSubmittingDecision] = useState(false);
   const toast = useToast();
 
   const fetchApplication = async () => {
@@ -119,6 +123,24 @@ export default function CandidateDetailModal({
       toast.error(err.response?.data?.message || err.message || 'Transition error');
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleDecisionSubmit = async (e) => {
+    e.preventDefault();
+    if (!decisionReason.trim()) return;
+    try {
+      setSubmittingDecision(true);
+      await applicationsApi.makeFinalDecision(application.id, decisionChoice, decisionReason.trim());
+      toast.success(`Hiring decision recorded: ${decisionChoice}.`);
+      setShowDecisionModal(false);
+      setDecisionReason('');
+      await fetchApplication();
+      if (onStatusChange) onStatusChange();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to record decision');
+    } finally {
+      setSubmittingDecision(false);
     }
   };
 
@@ -287,6 +309,16 @@ export default function CandidateDetailModal({
             >
               <Calendar size={13} color="var(--warning-text)" /> Schedule Round
             </button>
+
+            {application.status === 'INTERVIEW_COMPLETED' && (
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ padding: '0.3rem 0.65rem', fontSize: '0.72rem', background: '#059669', borderColor: '#059669' }}
+                onClick={() => setShowDecisionModal(true)}
+              >
+                <Award size={13} /> Final Decision
+              </button>
+            )}
           </div>
         </div>
 
@@ -654,6 +686,56 @@ export default function CandidateDetailModal({
           )}
         </div>
       </div>
+
+      {/* Hiring Decision Modal Dialog */}
+      {showDecisionModal && (
+        <div className="modal-overlay" style={{ zIndex: 60 }}>
+          <div className="modal-dialog" style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Award size={18} color="var(--success-text)" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>Record Hiring Decision</h3>
+              </div>
+              <button onClick={() => setShowDecisionModal(false)} className="btn-icon">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleDecisionSubmit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label className="form-label" style={{ display: 'block', marginBottom: '0.35rem' }}>Decision</label>
+                <select
+                  className="select-field"
+                  value={decisionChoice}
+                  onChange={(e) => setDecisionChoice(e.target.value)}
+                >
+                  <option value="SELECTED">SELECTED (Offer Extended)</option>
+                  <option value="REJECTED">REJECTED (Criteria / Bar Gap)</option>
+                  <option value="HOLD">HOLD (Future Requisition / Talent Pool)</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label" style={{ display: 'block', marginBottom: '0.35rem' }}>Decision Justification & Notes</label>
+                <textarea
+                  className="textarea-field"
+                  rows={3}
+                  required
+                  placeholder="Summarize panel feedback, bar assessment, and hiring decision rationale..."
+                  value={decisionReason}
+                  onChange={(e) => setDecisionReason(e.target.value)}
+                />
+              </div>
+              <div className="modal-footer" style={{ padding: '0.75rem 0 0 0', background: 'transparent' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDecisionModal(false)} disabled={submittingDecision}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={submittingDecision || !decisionReason.trim()}>
+                  {submittingDecision ? 'Recording Decision...' : 'Confirm Decision'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

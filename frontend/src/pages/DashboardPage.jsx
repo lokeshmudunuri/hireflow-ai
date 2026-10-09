@@ -188,6 +188,7 @@ export default function DashboardPage() {
           {pipelineStages.map((st, i) => (
             <div
               key={st.key}
+              onClick={() => navigate(`/pipeline?status=${st.key === 'INTERVIEW' ? 'INTERVIEW_SCHEDULED' : st.key}`)}
               style={{
                 padding: '0.85rem',
                 borderRadius: 'var(--radius-sm)',
@@ -196,8 +197,11 @@ export default function DashboardPage() {
                 borderTop: `3px solid ${st.color}`,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.25rem'
+                gap: '0.25rem',
+                cursor: 'pointer',
+                transition: 'transform var(--transition-fast)'
               }}
+              title={`View ${st.name} candidates in pipeline`}
             >
               <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                 {st.name}

@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Award
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { candidatesApi, applicationsApi, jobsApi, interviewsApi } from '../api/client';
 import CandidateDetailModal from '../components/CandidateDetailModal';
 import ValidationModal from '../components/ValidationModal';
@@ -24,16 +25,25 @@ import { SkeletonTable } from '../components/SkeletonLoader';
 import { useToast } from '../context/ToastContext';
 
 export default function CandidatesPage() {
+  const [searchParams] = useSearchParams();
+  const urlJobId = searchParams.get('jobId') || '';
+  const urlStage = searchParams.get('stage') || '';
+
   const [candidates, setCandidates] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
   const [search, setSearch] = useState('');
-  const [selectedJobId, setSelectedJobId] = useState('');
-  const [selectedStage, setSelectedStage] = useState('');
+  const [selectedJobId, setSelectedJobId] = useState(urlJobId);
+  const [selectedStage, setSelectedStage] = useState(urlStage);
   const [sortBy, setSortBy] = useState('score-desc');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+
+  useEffect(() => {
+    if (urlJobId) setSelectedJobId(urlJobId);
+    if (urlStage) setSelectedStage(urlStage);
+  }, [urlJobId, urlStage]);
 
   // Modals
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);

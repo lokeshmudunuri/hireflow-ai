@@ -350,7 +350,7 @@ export default function JobsPage() {
                   <button
                     className="btn btn-secondary btn-sm"
                     style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem' }}
-                    onClick={() => navigate('/candidates')}
+                    onClick={() => navigate(`/pipeline?jobId=${job.id}`)}
                   >
                     <Users size={12} /> Applicants
                   </button>
@@ -678,11 +678,12 @@ export default function JobsPage() {
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => {
+                      const jId = selectedJobDetail.id;
                       setSelectedJobDetail(null);
-                      navigate('/candidates');
+                      navigate(`/pipeline?jobId=${jId}`);
                     }}
                   >
-                    <Users size={14} /> View All Candidates
+                    <Users size={14} /> View Requisition Applicants ({selectedJobDetail.applications?.length || 0})
                   </button>
                   <button
                     className="btn btn-primary btn-sm"

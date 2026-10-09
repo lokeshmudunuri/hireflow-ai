@@ -2,11 +2,11 @@ const decisionService = require('../services/decisionService');
 
 const makeFinalDecision = async (req, res, next) => {
   try {
-    const { decision, reason, notes } = req.body;
+    const { decision, reason, notes, comments } = req.body;
     const application = await decisionService.makeFinalDecision(req.params.applicationId, {
       decision,
-      reason,
-      notes,
+      reason: reason || comments || `Final decision made: ${decision}`,
+      notes: notes || comments,
       recruiterId: req.user.id
     });
 

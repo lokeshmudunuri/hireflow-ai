@@ -24,6 +24,14 @@ const Interviewer = sequelize.define('Interviewer', {
   title: {
     type: DataTypes.STRING(100),
     defaultValue: 'Senior Software Engineer'
+  },
+  skills: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  maxInterviewsPerWeek: {
+    type: DataTypes.INTEGER,
+    defaultValue: 5
   }
 }, {
   tableName: 'interviewers'

@@ -19,7 +19,7 @@ router.post(
     body('communicationScore').isFloat({ min: 1, max: 10 }).withMessage('communicationScore must be between 1 and 10'),
     body('projectKnowledgeScore').isFloat({ min: 1, max: 10 }).withMessage('projectKnowledgeScore must be between 1 and 10'),
     body('roleFitScore').isFloat({ min: 1, max: 10 }).withMessage('roleFitScore must be between 1 and 10'),
-    body('recommendation').isIn(['Strong Hire', 'Hire', 'Hold', 'Reject']).withMessage('Invalid recommendation'),
+    body('recommendation').isIn(['Strong Hire', 'Hire', 'Hold', 'No Hire', 'Strong No Hire', 'Reject']).withMessage('Invalid recommendation'),
     body('comments').trim().notEmpty().withMessage('Evaluation comments are required'),
     validate
   ],

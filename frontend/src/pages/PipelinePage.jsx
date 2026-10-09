@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { applicationsApi, jobsApi, interviewsApi } from '../api/client';
 import CandidateDetailModal from '../components/CandidateDetailModal';
 import ValidationModal from '../components/ValidationModal';
@@ -28,6 +29,10 @@ import { SkeletonCards, SkeletonTable } from '../components/SkeletonLoader';
 import { useToast } from '../context/ToastContext';
 
 export default function PipelinePage() {
+  const [searchParams] = useSearchParams();
+  const urlJobId = searchParams.get('jobId') || '';
+  const urlStatus = searchParams.get('status') || '';
+
   const [applications, setApplications] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,12 +40,17 @@ export default function PipelinePage() {
 
   // Filters & Sorting
   const [search, setSearch] = useState('');
-  const [selectedJobId, setSelectedJobId] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedJobId, setSelectedJobId] = useState(urlJobId);
+  const [selectedStatus, setSelectedStatus] = useState(urlStatus);
   const [scoreFilter, setScoreFilter] = useState('');
   const [minExp, setMinExp] = useState('');
   const [sortBy, setSortBy] = useState('score-desc');
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
+
+  useEffect(() => {
+    if (urlJobId) setSelectedJobId(urlJobId);
+    if (urlStatus) setSelectedStatus(urlStatus);
+  }, [urlJobId, urlStatus]);
 
   // Modals state
   const [selectedAppId, setSelectedAppId] = useState(null);
